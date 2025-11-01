@@ -120,54 +120,55 @@
 
   <script>
   async function askQuestion() {
-    const question = document.getElementById("question").value.trim();
-    const answerBox = document.getElementById("answerBox");
-    const loader = document.getElementById("loader");
-    const btn = document.getElementById("askBtn");
+  const question = document.getElementById("question").value.trim();
+  const answerBox = document.getElementById("answerBox");
+  const loader = document.getElementById("loader");
+  const btn = document.getElementById("askBtn");
 
-    if (!question) {
-      answerBox.style.display = "block";
-      answerBox.innerHTML = "Please enter a question.";
-      return;
-    }
-
-    // Reset UI
-    answerBox.style.display = "none";
-    loader.style.display = "block";
-    btn.disabled = true;
-
-    try {
-      // 1️⃣ Send question to Zapier (fire & forget)
-      await fetch("/ask", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question }),
-      });
-
-      answerBox.innerHTML = "Processing your question...";
-      answerBox.style.display = "block";
-
-      // 2️⃣ Poll for answer
-      const answer = await pollForAnswer();
-      answerBox.innerHTML = answer || "Sorry, no answer received yet.";
-    } catch (error) {
-      answerBox.innerHTML = "Error connecting to assistant.";
-    } finally {
-      loader.style.display = "none";
-      btn.disabled = false;
-    }
+  if (!question) {
+    answerBox.style.display = "block";
+    answerBox.innerHTML = "Please enter a question.";
+    return;
   }
 
-  async function pollForAnswer() {
-    const maxAttempts = 20; // up to ~20 seconds
-    for (let i = 0; i < maxAttempts; i++) {
-      const res = await fetch("/latest-answer");
-      const data = await res.json();
-      if (data.answer) return data.answer;
-      await new Promise((r) => setTimeout(r, 1000)); // wait 1s before retrying
-    }
-    return null;
+  // Reset UI
+  answerBox.style.display = "none";
+  loader.style.display = "block";
+  btn.disabled = true;
+
+  try {
+    // Send question, receive questionId
+    const askRes = await fetch("/ask", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question }),
+    });
+    const { questionId } = await askRes.json();
+
+    answerBox.innerHTML = "Processing your question...";
+    answerBox.style.display = "block";
+
+    // Poll for the specific questionId
+    const answer = await pollForAnswer(questionId);
+    answerBox.innerHTML = answer || "Sorry, no answer received yet.";
+  } catch (error) {
+    answerBox.innerHTML = "Error connecting to assistant.";
+  } finally {
+    loader.style.display = "none";
+    btn.disabled = false;
   }
+}
+
+async function pollForAnswer(questionId) {
+  const maxAttempts = 30; // 30s timeout
+  for (let i = 0; i < maxAttempts; i++) {
+    const res = await fetch(`/latest-answer/${questionId}`);
+    const data = await res.json();
+    if (data.answer) return data.answer;
+    await new Promise((r) => setTimeout(r, 1000)); // wait 1s
+  }
+  return null;
+}
 </script>
 </body>
 </html>
