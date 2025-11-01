@@ -191,9 +191,10 @@
 
         const box = document.createElement("div");
         box.className = "answer-box";
+        const emailId = `email-${Date.now()}`;
 
+        // CASE 1: No answer or AI doesn't know
         if (!answer || answer.includes("Sorry, I can’t answer that right now.")) {
-          const emailId = `email-${Date.now()}`;
           box.innerHTML = `
           Question: ${question}\n\n
           Sorry, I can’t answer that right now.
@@ -222,10 +223,9 @@
               display: block;
             "
             onclick="sendToTeam('${question}','${emailId}')">Send
-          </button>
-        `;
+          </button>`;
         } else {
-          const emailId = `email-${Date.now()}`;
+          // CASE 2: AI has an answer
           box.innerHTML = `
           <div class="question">Question: ${question}</div>
           <div class="answer">Answer: ${answer}</div>
@@ -236,8 +236,7 @@
               onclick="toggleFeedbackForm('${emailId}', '${question}')">Let us know</a>
           </div>
           <div id="feedback-${emailId}" style="display:none;margin-top:10px;">
-            <p style="font-size:14px;color:#ccc;margin-bottom:6px;">
-              If you enter your email and press <b>Send</b>, we’ll receive your question and get back to you as soon as possible.
+            <p style="font-size:14px;color:#ccc;margin-bottom:6px;">If you enter your email and press <b>Send</b>, we’ll receive your question and get back to you as soon as possible.
             </p>
             <input id="${emailId}" 
                   type="email" 
