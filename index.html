@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Shook Vendor Assistant</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=Inter:wght@400;600&display=swap');
+
+    body {
+      margin: 0;
+      height: 100vh;
+      background: radial-gradient(ellipse at center, #2b0b19 0%, #000 100%);
+      color: #fff;
+      font-family: 'Inter', sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 540px;
+      padding: 40px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      box-shadow: 0 0 40px rgba(178, 42, 89, 0.25);
+      backdrop-filter: blur(10px);
+    }
+
+    h2 {
+      text-align: center;
+      font-family: 'IBM Plex Mono', monospace;
+      font-weight: 600;
+      margin-bottom: 28px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    input {
+      padding: 14px 16px;
+      font-size: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 10px;
+      color: #fff;
+      outline: none;
+      transition: all 0.25s ease;
+    }
+
+    input:focus {
+      border-color: #d12b6a;
+      box-shadow: 0 0 6px #d12b6a77;
+    }
+
+    button {
+      background-color: #d12b6a;
+      color: white;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background-color 0.25s ease;
+    }
+
+    button:hover {
+      background-color: #b41f57;
+    }
+
+    .loader {
+      margin: 20px auto 0;
+      border: 4px solid rgba(255,255,255,0.2);
+      border-top: 4px solid #d12b6a;
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      animation: spin 1s linear infinite;
+      display: none;
+    }
+
+    @keyframes spin {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    .answer-box {
+      margin-top: 28px;
+      background: rgba(255, 255, 255, 0.05);
+      border-left: 4px solid #d12b6a;
+      padding: 18px 20px;
+      border-radius: 10px;
+      line-height: 1.6;
+      display: none;
+      animation: fadeIn 0.5s ease-in;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>💬 Shook Vendor Assistant</h2>
+    <div class="input-group">
+      <input id="question" type="text" placeholder="Ask about invoices, payments, access…" />
+      <button id="askBtn" onclick="askQuestion()">Ask</button>
+    </div>
+    <div class="loader" id="loader"></div>
+    <div class="answer-box" id="answerBox"></div>
+  </div>
+
+  <script>
+  async function askQuestion() {
+    const question = document.getElementById("question").value.trim();
+    const answerBox = document.getElementById("answerBox");
+    const loader = document.getElementById("loader");
+    const btn = document.getElementById("askBtn");
+
+    if (!question) {
+      answerBox.style.display = "block";
+      answerBox.innerHTML = "Please enter a question.";
+      return;
+    }
+
+    // Reset UI
+    answerBox.style.display = "none";
+    loader.style.display = "block";
+    btn.disabled = true;
+
+    try {
+      // 1️⃣ Send question to Zapier (fire & forget)
+      await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+
+      answerBox.innerHTML = "Processing your question...";
+      answerBox.style.display = "block";
+
+      // 2️⃣ Poll for answer
+      const answer = await pollForAnswer();
+      answerBox.innerHTML = answer || "Sorry, no answer received yet.";
+    } catch (error) {
+      answerBox.innerHTML = "Error connecting to assistant.";
+    } finally {
+      loader.style.display = "none";
+      btn.disabled = false;
+    }
+  }
+
+  async function pollForAnswer() {
+    const maxAttempts = 20; // up to ~20 seconds
+    for (let i = 0; i < maxAttempts; i++) {
+      const res = await fetch("/latest-answer");
+      const data = await res.json();
+      if (data.answer) return data.answer;
+      await new Promise((r) => setTimeout(r, 1000)); // wait 1s before retrying
+    }
+    return null;
+  }
+</script>
+</body>
+</html>
