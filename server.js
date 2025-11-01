@@ -9,16 +9,15 @@ app.use(express.static(__dirname));
 // store answers by questionId
 const answers = new Map();
 
-// Send question to Zapier
+// Send question to Zapier for AI processing
 app.post("/ask", async (req, res) => {
   try {
     const questionId = Date.now().toString(); // unique ID per question
     const webhookURL = process.env.ZAPIER_WEBHOOK;
 
-    // Save placeholder so frontend waits for it
     answers.set(questionId, null);
 
-    // Send to Zapier, including questionId
+    // Send to Zapier (AI flow)
     await fetch(webhookURL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -32,7 +31,7 @@ app.post("/ask", async (req, res) => {
   }
 });
 
-// Zapier posts answers here
+// Zapier posts AI answers here
 app.post("/receive-answer", (req, res) => {
   const { questionId, answer } = req.body;
   console.log("Received from Zapier:", req.body);
@@ -43,11 +42,32 @@ app.post("/receive-answer", (req, res) => {
   res.send("Answer received");
 });
 
-// Frontend polls this
+// NEW: Endpoint to send question + email manually to Zapier team inbox
+app.post("/send-to-team", async (req, res) => {
+  const { question, email } = req.body;
+  const zapierHook = process.env.ZAPIER_TEAM_WEBHOOK;
+
+  try {
+    await fetch(zapierHook, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ question, email }),
+    });
+
+    res.json({ success: true, message: "Sent to Zapier team successfully" });
+  } catch (err) {
+    console.error("Error sending to team Zapier hook:", err);
+    res.status(500).json({ success: false, error: "Failed to send to Zapier" });
+  }
+});
+
+// Frontend polls for answer
 app.get("/latest-answer/:id", (req, res) => {
   const answer = answers.get(req.params.id);
   res.json({ answer });
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);
