@@ -90,20 +90,35 @@
       to { transform: rotate(360deg); }
     }
 
-    .answer-box {
+    .answers {
       margin-top: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .answer-box {
       background: rgba(255, 255, 255, 0.05);
       border-left: 4px solid #d12b6a;
       padding: 18px 20px;
       border-radius: 10px;
       line-height: 1.6;
-      display: none;
       animation: fadeIn 0.5s ease-in;
+      white-space: pre-line;
     }
 
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(8px); }
       to { opacity: 1; transform: translateY(0); }
+    }
+
+    .question {
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .answer {
+      color: #ffd6e5;
     }
   </style>
 </head>
@@ -115,60 +130,64 @@
       <button id="askBtn" onclick="askQuestion()">Ask</button>
     </div>
     <div class="loader" id="loader"></div>
-    <div class="answer-box" id="answerBox"></div>
+    <div class="answers" id="answersContainer"></div>
   </div>
 
   <script>
-  async function askQuestion() {
-  const question = document.getElementById("question").value.trim();
-  const answerBox = document.getElementById("answerBox");
-  const loader = document.getElementById("loader");
-  const btn = document.getElementById("askBtn");
+    async function askQuestion() {
+      const input = document.getElementById("question");
+      const question = input.value.trim();
+      const loader = document.getElementById("loader");
+      const btn = document.getElementById("askBtn");
+      const answersContainer = document.getElementById("answersContainer");
 
-  if (!question) {
-    answerBox.style.display = "block";
-    answerBox.innerHTML = "Please enter a question.";
-    return;
-  }
+      if (!question) return;
 
-  // Reset UI
-  answerBox.style.display = "none";
-  loader.style.display = "block";
-  btn.disabled = true;
+      loader.style.display = "block";
+      btn.disabled = true;
 
-  try {
-    // Send question, receive questionId
-    const askRes = await fetch("/ask", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ question }),
-    });
-    const { questionId } = await askRes.json();
+      try {
+        // send question to backend
+        const askRes = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question }),
+        });
+        const { questionId } = await askRes.json();
 
-    answerBox.innerHTML = "Processing your question...";
-    answerBox.style.display = "block";
+        // poll for answer
+        const answer = await pollForAnswer(questionId);
 
-    // Poll for the specific questionId
-    const answer = await pollForAnswer(questionId);
-    answerBox.innerHTML = answer || "Sorry, no answer received yet.";
-  } catch (error) {
-    answerBox.innerHTML = "Error connecting to assistant.";
-  } finally {
-    loader.style.display = "none";
-    btn.disabled = false;
-  }
-}
+        // create new answer element
+        const box = document.createElement("div");
+        box.className = "answer-box";
+        box.innerHTML = `\nQuestion: ${question}\n\nAnswer: ${answer || "Sorry, no answer received."}`;
+        answersContainer.appendChild(box);
 
-async function pollForAnswer(questionId) {
-  const maxAttempts = 30; // 30s timeout
-  for (let i = 0; i < maxAttempts; i++) {
-    const res = await fetch(`/latest-answer/${questionId}`);
-    const data = await res.json();
-    if (data.answer) return data.answer;
-    await new Promise((r) => setTimeout(r, 1000)); // wait 1s
-  }
-  return null;
-}
-</script>
+        // clear input field
+        input.value = "";
+
+      } catch (error) {
+        const box = document.createElement("div");
+        box.className = "answer-box";
+        box.textContent = "Error connecting to assistant.";
+        answersContainer.appendChild(box);
+      } finally {
+        loader.style.display = "none";
+        btn.disabled = false;
+      }
+    }
+
+    async function pollForAnswer(questionId) {
+      const maxAttempts = 30;
+      for (let i = 0; i < maxAttempts; i++) {
+        const res = await fetch(`/latest-answer/${questionId}`);
+        const data = await res.json();
+        if (data.answer) return data.answer;
+        await new Promise((r) => setTimeout(r, 1000));
+      }
+      return null;
+    }
+  </script>
 </body>
 </html>
