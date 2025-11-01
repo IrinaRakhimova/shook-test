@@ -133,61 +133,108 @@
     <div class="answers" id="answersContainer"></div>
   </div>
 
-  <script>
-    async function askQuestion() {
-      const input = document.getElementById("question");
-      const question = input.value.trim();
-      const loader = document.getElementById("loader");
-      const btn = document.getElementById("askBtn");
-      const answersContainer = document.getElementById("answersContainer");
+<script>
+  async function askQuestion() {
+    const input = document.getElementById("question");
+    const question = input.value.trim();
+    const loader = document.getElementById("loader");
+    const btn = document.getElementById("askBtn");
+    const answersContainer = document.getElementById("answersContainer");
 
-      if (!question) return;
+    if (!question) return;
 
-      loader.style.display = "block";
-      btn.disabled = true;
+    loader.style.display = "block";
+    btn.disabled = true;
 
-      try {
-        // send question to backend
-        const askRes = await fetch("/ask", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ question }),
-        });
-        const { questionId } = await askRes.json();
+    try {
+      // Send question to backend
+      const askRes = await fetch("/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question }),
+      });
+      const { questionId } = await askRes.json();
 
-        // poll for answer
-        const answer = await pollForAnswer(questionId);
+      // Poll for answer
+      const answer = await pollForAnswer(questionId);
 
-        // create new answer element
-        const box = document.createElement("div");
-        box.className = "answer-box";
-        box.innerHTML = `\nQuestion: ${question}\n\nAnswer: ${answer || "Sorry, no answer received."}`;
-        answersContainer.appendChild(box);
+      // Create new answer element
+      const box = document.createElement("div");
+      box.className = "answer-box";
 
-        // clear input field
-        input.value = "";
-
-      } catch (error) {
-        const box = document.createElement("div");
-        box.className = "answer-box";
-        box.textContent = "Error connecting to assistant.";
-        answersContainer.appendChild(box);
-      } finally {
-        loader.style.display = "none";
-        btn.disabled = false;
+      // Fallback message if AI doesn’t know
+      if (!answer || answer.includes("not sure")) {
+        const emailId = `email-${Date.now()}`;
+        box.innerHTML = `
+        Question: ${question}\n\n
+        Sorry, I can’t answer that right now.  
+        Your question has been sent to the Shook team, and we’ll get back to you as soon as possible.  
+        If you’d like, you can leave your email below and press <b>Send to Team</b>,  
+        and we’ll reply directly to your inbox once we have an answer.  
+        You can also contact us anytime at  
+        <a href="mailto:ops@shook.digital" style="color:#ffb6c1;">ops@shook.digital</a>.
+        
+        <br><br>
+        <input id="${emailId}" 
+               type="email" 
+               placeholder="Enter your email" 
+               style="margin-top:10px;padding:10px;width:100%;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:white;">
+        <button style="margin-top:10px;padding:10px 16px;border:none;border-radius:8px;background-color:#d12b6a;color:white;cursor:pointer;"
+                onclick="sendToTeam('${question}','${emailId}')">
+          Send to Team
+        </button>
+        `;
+      } else {
+        box.innerHTML = `\nQuestion: ${question}\n\nAnswer: ${answer}`;
       }
+
+      // Add new box at the top
+      answersContainer.prepend(box);
+
+      // Clear input
+      input.value = "";
+
+    } catch (error) {
+      const box = document.createElement("div");
+      box.className = "answer-box";
+      box.textContent = "Error connecting to assistant.";
+      answersContainer.prepend(box);
+    } finally {
+      loader.style.display = "none";
+      btn.disabled = false;
+    }
+  }
+
+  async function pollForAnswer(questionId) {
+    const maxAttempts = 30;
+    for (let i = 0; i < maxAttempts; i++) {
+      const res = await fetch(`/latest-answer/${questionId}`);
+      const data = await res.json();
+      if (data.answer) return data.answer;
+      await new Promise((r) => setTimeout(r, 1000));
+    }
+    return null;
+  }
+
+  // Function to send question + email to n8n webhook
+  async function sendToTeam(question, emailInputId) {
+    const email = document.getElementById(emailInputId).value.trim();
+    if (!email) {
+      alert("Please enter your email first.");
+      return;
     }
 
-    async function pollForAnswer(questionId) {
-      const maxAttempts = 30;
-      for (let i = 0; i < maxAttempts; i++) {
-        const res = await fetch(`/latest-answer/${questionId}`);
-        const data = await res.json();
-        if (data.answer) return data.answer;
-        await new Promise((r) => setTimeout(r, 1000));
-      }
-      return null;
+    try {
+      await fetch("/send-to-team", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question, email }),
+      });
+      alert("✅ Your question has been sent to the Shook team. Thank you!");
+    } catch {
+      alert("❌ There was an error sending your question. Please try again later.");
     }
-  </script>
+  }
+</script>
 </body>
 </html>
