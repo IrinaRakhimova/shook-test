@@ -193,7 +193,7 @@
                 box.className = "answer-box";
 
                 // Fallback message if AI doesn’t know
-                if (!answer || answer.includes("not sure")) {
+                if (!answer || answer.includes("Sorry, I can’t answer that right now.")) {
                     const emailId = `email-${Date.now()}`;
                     box.innerHTML = `
         Question: ${question}\n\n
