@@ -226,7 +226,41 @@
 </button>
         `;
                 } else {
-                    box.innerHTML = `\nQuestion: ${question}\n\nAnswer: ${answer}`;
+                    const emailId = `email-${Date.now()}`;
+                    box.innerHTML = `
+  <div class="question">Question: ${question}</div>
+  <div class="answer">Answer: ${answer}</div>
+  <div style="margin-top:10px;font-size:14px;color:#ccc;">
+    Not sure this answers your question?
+    <a href="#" 
+       style="color:#ffb6c1;text-decoration:underline;" 
+       onclick="toggleFeedbackForm('${emailId}', '${question}')">
+       Let us know
+    </a>.
+  </div>
+  <div id="feedback-${emailId}" style="display:none;margin-top:10px;">
+    <input id="${emailId}" 
+           type="email" 
+           placeholder="Enter your email" 
+           style="margin-top:10px;padding:10px;width: calc(100% - 20px);border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:white;">
+    <button 
+      style="
+        margin-top: 10px;
+        padding: 10px 0;
+        width: 100%;
+        border: none;
+        border-radius: 8px;
+        background-color: #d12b6a;
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+        font-size: 16px;
+        text-align: center;
+        display: block;
+      "
+      onclick="sendToTeam('${question}','${emailId}')">Send
+    </button>
+  </div>`;
                 }
 
                 // Add new box at the top
@@ -274,6 +308,15 @@
                 alert("✅ Your question has been sent to the Shook team. Thank you!");
             } catch {
                 alert("❌ There was an error sending your question. Please try again later.");
+            }
+        }
+
+        function toggleFeedbackForm(emailId, question) {
+            const feedback = document.getElementById(`feedback-${emailId}`);
+            if (feedback.style.display === "none") {
+                feedback.style.display = "block";
+            } else {
+                feedback.style.display = "none";
             }
         }
     </script>
