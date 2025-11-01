@@ -167,10 +167,9 @@
         const emailId = `email-${Date.now()}`;
         box.innerHTML = `
         Question: ${question}\n\n
-        Sorry, I can’t answer that right now.  
-        Your question has been sent to the Shook team, and we’ll get back to you as soon as possible.  
-        If you’d like, you can leave your email below and press <b>Send to Team</b>,  
-        and we’ll reply directly to your inbox once we have an answer.  
+        Sorry, I can’t answer that right now.
+        You can send your question to the Shook team by leaving your email below and pressing<b>Send</b>  
+        — we’ll reply directly to your inbox as soon as we have an answer. </br>
         You can also contact us anytime at  
         <a href="mailto:ops@shook.digital" style="color:#ffb6c1;">ops@shook.digital</a>.
         
@@ -179,9 +178,9 @@
                type="email" 
                placeholder="Enter your email" 
                style="margin-top:10px;padding:10px;width:100%;border-radius:8px;border:none;background:rgba(255,255,255,0.1);color:white;">
-        <button style="margin-top:10px;padding:10px 16px;border:none;border-radius:8px;background-color:#d12b6a;color:white;cursor:pointer;"
+        <button style="padding:10px 16px;border:none;border-radius:8px;background-color:#d12b6a;color:white;cursor:pointer;"
                 onclick="sendToTeam('${question}','${emailId}')">
-          Send to Team
+          Send
         </button>
         `;
       } else {
