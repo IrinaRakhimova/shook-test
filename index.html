@@ -76,23 +76,39 @@
         }
 
         .loader {
-            margin: 20px auto 0;
-            border: 4px solid rgba(255, 255, 255, 0.2);
-            border-top: 4px solid #d12b6a;
-            border-radius: 50%;
-            width: 32px;
-            height: 32px;
-            animation: spin 1s linear infinite;
+            margin-top: 20px;
+            text-align: center;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 16px;
+            font-weight: 600;
+            color: #ffb6c1;
+            letter-spacing: 1px;
             display: none;
         }
 
-        @keyframes spin {
-            from {
-                transform: rotate(0deg);
+        .loader::after {
+            content: "Thinking";
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+
+            0%,
+            20% {
+                content: "Thinking";
             }
 
-            to {
-                transform: rotate(360deg);
+            40% {
+                content: "Thinking.";
+            }
+
+            60% {
+                content: "Thinking..";
+            }
+
+            80%,
+            100% {
+                content: "Thinking...";
             }
         }
 
