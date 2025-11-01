@@ -3,10 +3,9 @@ const fetch = require("node-fetch");
 const path = require("path");
 
 const app = express();
-const __dirname = path.resolve();
 
 app.use(express.json());
-app.use(express.static(__dirname)); // serves index.html and assets
+app.use(express.static(__dirname));
 
 let latestAnswer = null;
 
